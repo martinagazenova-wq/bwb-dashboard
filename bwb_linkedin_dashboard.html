@@ -28,6 +28,8 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  html, body { width: 100%; height: 100%; }
+
   body {
     font-family: var(--font);
     background: var(--bg);
@@ -38,7 +40,7 @@
   }
 
   /* Layout */
-  .shell { display: flex; min-height: 100vh; }
+  .shell { display: flex; min-height: 100vh; width: 100%; }
 
   /* Sidebar */
   .sidebar {
@@ -112,7 +114,8 @@
     margin-left: 220px;
     flex: 1;
     padding: 2rem 2.5rem;
-    width: calc(100% - 220px);
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .page-header {
@@ -155,7 +158,7 @@
   /* Metric grid */
   .metric-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 12px;
     margin-bottom: 1.75rem;
   }
@@ -184,7 +187,7 @@
   /* Charts */
   .chart-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
     gap: 12px;
     margin-bottom: 1.5rem;
   }
@@ -240,7 +243,9 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 12px;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
+    width: 100%;
   }
   table { width: 100%; border-collapse: collapse; }
   thead { background: var(--surface2); }
@@ -281,7 +286,7 @@
   .strategy-section { display: flex; flex-direction: column; gap: 1.25rem; }
   .insight-row {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0,1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 12px;
   }
   .insight-card {
