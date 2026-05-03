@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BWB LinkedIn Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1a1a24;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0f0f5;
+    --muted: #8888a0;
+    --dim: #55556a;
+    --accent: #7c6fef;
+    --accent2: #5bc8a0;
+    --amber: #e8b84b;
+    --coral: #e86b5b;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Layout */
+  .shell { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    min-height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 2rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+  }
+
+  .logo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .logo-mark {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-family: var(--mono);
+  }
+  .logo-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .logo-sub {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .nav { display: flex; flex-direction: column; gap: 2px; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: .6rem .875rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--muted);
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    transition: all .15s;
+  }
+  .nav-item:hover { background: rgba(255,255,255,.04); color: var(--text); }
+  .nav-item.active { background: rgba(124,111,239,.12); color: var(--accent); }
+  .nav-icon { width: 16px; height: 16px; opacity: .7; flex-shrink: 0; }
+
+  .nav-section {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--dim);
+    padding: .25rem .875rem;
+    margin-top: .5rem;
+  }
+
+  /* Main */
+  .main {
+    margin-left: 220px;
+    flex: 1;
+    padding: 2rem 2.5rem;
+    max-width: 1100px;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    gap: 1rem;
+  }
+  .page-title { font-size: 20px; font-weight: 500; }
+  .page-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .5rem 1rem;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent2);
+    flex-shrink: 0;
+  }
+  .status-dot.loading { background: var(--amber); animation: pulse 1s infinite; }
+  .status-dot.error { background: var(--coral); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* Panels */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Metric grid */
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 1.75rem;
+  }
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.125rem 1.25rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent-line, var(--accent));
+    opacity: .5;
+  }
+  .metric-label { font-size: 11px; color: var(--muted); letter-spacing: .04em; margin-bottom: 6px; }
+  .metric-val { font-size: 26px; font-weight: 500; letter-spacing: -.02em; }
+  .metric-delta { font-size: 11px; color: var(--muted); margin-top: 4px; font-family: var(--mono); }
+  .delta-up { color: var(--accent2); }
+  .delta-down { color: var(--coral); }
+
+  /* Charts */
+  .chart-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 1.5rem;
+  }
+  .chart-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+  .chart-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+  .chart-wrap { position: relative; width: 100%; }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .filter-label { font-size: 12px; color: var(--muted); }
+  select, .btn-sm {
+    font-family: var(--font);
+    font-size: 12px;
+    padding: .375rem .75rem;
+    border: 1px solid var(--border2);
+    border-radius: 7px;
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    outline: none;
+    transition: border-color .15s;
+  }
+  select:hover, .btn-sm:hover { border-color: rgba(255,255,255,.2); }
+  select option { background: var(--surface2); }
+
+  .count-badge {
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: auto;
+    font-family: var(--mono);
+  }
+
+  /* Table */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead { background: var(--surface2); }
+  th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--dim);
+    padding: .75rem 1rem;
+    white-space: nowrap;
+  }
+  td {
+    padding: .7rem 1rem;
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: .04em;
+    white-space: nowrap;
+  }
+  .b-weekly    { background: rgba(124,111,239,.15); color: #9d93f5; }
+  .b-speaker   { background: rgba(91,200,160,.12); color: #6dd9b2; }
+  .b-sponsor   { background: rgba(232,184,75,.12); color: #e8b84b; }
+  .b-regular   { background: rgba(255,255,255,.06); color: var(--muted); }
+
+  /* Strategy */
+  .strategy-section { display: flex; flex-direction: column; gap: 1.25rem; }
+  .insight-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0,1fr));
+    gap: 12px;
+  }
+  .insight-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+  }
+  .insight-title { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .insight-val { font-size: 16px; font-weight: 500; }
+  .insight-sub { font-size: 11px; color: var(--dim); margin-top: 2px; font-family: var(--mono); }
+
+  .gen-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    padding: .625rem 1.25rem;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    background: rgba(124,111,239,.1);
+    color: var(--accent);
+    cursor: pointer;
+    transition: all .15s;
+    align-self: flex-start;
+  }
+  .gen-btn:hover { background: rgba(124,111,239,.2); }
+  .gen-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  .strategy-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    min-height: 200px;
+  }
+  .strategy-output {
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--text);
+    white-space: pre-wrap;
+  }
+  .strategy-output strong { color: var(--accent); font-weight: 600; }
+  .strategy-placeholder { color: var(--dim); font-size: 13px; }
+
+  /* Month selector for strategy */
+  .strategy-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* Update panel */
+  .upload-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    margin-bottom: 1rem;
+  }
+  .upload-card:hover {
+    border-color: var(--accent);
+    background: rgba(124,111,239,.04);
+  }
+  .upload-card.drag-over {
+    border-color: var(--accent);
+    background: rgba(124,111,239,.08);
+  }
+  .upload-icon { font-size: 2rem; margin-bottom: .75rem; opacity: .5; }
+  .upload-title { font-size: 15px; font-weight: 500; margin-bottom: .375rem; }
+  .upload-sub { font-size: 12px; color: var(--muted); }
+
+  .upload-status {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: var(--mono);
+    padding: .75rem 1rem;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+    display: none;
+  }
+  .upload-status.visible { display: block; }
+  .upload-status.success { border-color: rgba(91,200,160,.3); color: var(--accent2); }
+  .upload-status.error { border-color: rgba(232,107,91,.3); color: var(--coral); }
+
+  .data-table { width: 100%; font-size: 13px; color: var(--muted); }
+  .data-table td { padding: .375rem 0; }
+  .data-table td:first-child { color: var(--text); font-family: var(--mono); font-size: 12px; }
+
+  /* Settings */
+  .settings-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .settings-title { font-size: 13px; font-weight: 500; margin-bottom: 1rem; }
+  .settings-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 1rem; }
+  .settings-label { font-size: 12px; color: var(--muted); }
+  .settings-input {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: .5rem .875rem;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    background: var(--surface2);
+    color: var(--text);
+    outline: none;
+    width: 100%;
+    transition: border-color .15s;
+  }
+  .settings-input:focus { border-color: var(--accent); }
+  .settings-note { font-size: 11px; color: var(--dim); margin-top: 4px; }
+  .save-btn {
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    padding: .5rem 1.25rem;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    background: rgba(124,111,239,.1);
+    color: var(--accent);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .save-btn:hover { background: rgba(124,111,239,.2); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  .section-gap { margin-bottom: 1.5rem; }
+
+  .top-posts-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: .875rem;
+  }
+
+  .er-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .er-bar-bg { flex: 1; height: 4px; background: rgba(255,255,255,.07); border-radius: 2px; overflow: hidden; }
+  .er-bar-fill { height: 100%; border-radius: 2px; background: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">BWB</div>
+      <div class="logo-name">LinkedIn Analytics</div>
+      <div class="logo-sub">Company page · Organic</div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section">Analyse</div>
+      <button class="nav-item active" onclick="switchTab('overview')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
+        Overview
+      </button>
+      <button class="nav-item" onclick="switchTab('posts')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h10"/></svg>
+        All posts
+      </button>
+      <button class="nav-item" onclick="switchTab('strategy')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v4l3 3M14 8A6 6 0 1 1 2 8a6 6 0 0 1 12 0z"/></svg>
+        Strategy
+      </button>
+
+      <div class="nav-section">Manage</div>
+      <button class="nav-item" onclick="switchTab('update')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v10M3 9l5 5 5-5"/><path d="M2 14h12"/></svg>
+        Update data
+      </button>
+      <button class="nav-item" onclick="switchTab('settings')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>
+        Settings
+      </button>
+    </nav>
+
+    <div style="margin-top:auto">
+      <div id="sidebar-status" class="status-bar">
+        <div class="status-dot loading" id="status-dot"></div>
+        <span id="status-text">Loading...</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- OVERVIEW -->
+    <div id="panel-overview" class="panel active">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Overview</div>
+          <div class="page-sub">Blockchain Week Bulgaria · LinkedIn company page</div>
+        </div>
+        <div class="filter-bar" style="margin-bottom:0">
+          <span class="filter-label">Period</span>
+          <select id="ov-month" onchange="renderOverview()">
+            <option value="all">All time</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="metric-grid" id="metric-cards"></div>
+
+      <div class="chart-row">
+        <div class="chart-box">
+          <div class="chart-label">Impressions by month</div>
+          <div class="chart-wrap" style="height:180px"><canvas id="ch-impressions" role="img" aria-label="Monthly impressions chart"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-label">Avg engagement rate % by month</div>
+          <div class="chart-wrap" style="height:180px"><canvas id="ch-er" role="img" aria-label="Monthly engagement rate chart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="chart-row">
+        <div class="chart-box">
+          <div class="chart-label">Avg impressions by category</div>
+          <div class="chart-wrap" style="height:180px"><canvas id="ch-cat-imp" role="img" aria-label="Category impressions chart"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-label">Avg ER % by category</div>
+          <div class="chart-wrap" style="height:180px"><canvas id="ch-cat-er" role="img" aria-label="Category engagement rate chart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="top-posts-title">Top 5 posts by impressions</div>
+      <div class="table-wrap" id="top-table"></div>
+    </div>
+
+    <!-- ALL POSTS -->
+    <div id="panel-posts" class="panel">
+      <div class="page-header">
+        <div>
+          <div class="page-title">All posts</div>
+          <div class="page-sub">Sorted by impressions</div>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <span class="filter-label">Month</span>
+        <select id="posts-month" onchange="renderPosts()"><option value="all">All</option></select>
+        <span class="filter-label">Category</span>
+        <select id="posts-cat" onchange="renderPosts()">
+          <option value="all">All</option>
+          <option value="BWB Weekly">BWB Weekly</option>
+          <option value="Speaker announcement">Speaker</option>
+          <option value="Sponsor / partner">Sponsor / partner</option>
+          <option value="Regular post">Regular</option>
+        </select>
+        <span class="count-badge" id="posts-count"></span>
+      </div>
+      <div class="table-wrap" id="posts-table"></div>
+    </div>
+
+    <!-- STRATEGY -->
+    <div id="panel-strategy" class="panel">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Strategy</div>
+          <div class="page-sub">AI-generated content strategy based on your data</div>
+        </div>
+      </div>
+      <div class="strategy-section">
+        <div class="insight-row" id="insight-cards"></div>
+        <div class="strategy-controls">
+          <span class="filter-label">Generate strategy for</span>
+          <select id="strategy-month-target">
+            <option value="next">Next month</option>
+          </select>
+          <button class="gen-btn" id="gen-btn" onclick="generateStrategy()">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1l1.5 4.5L14 7l-4.5 1.5L8 13l-1.5-4.5L2 7l4.5-1.5z"/></svg>
+            Generate strategy
+          </button>
+        </div>
+        <div class="strategy-box">
+          <div class="strategy-output" id="strategy-output">
+            <span class="strategy-placeholder">Click "Generate strategy" to analyse your data and produce a content plan for the selected month.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UPDATE DATA -->
+    <div id="panel-update" class="panel">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Update data</div>
+          <div class="page-sub">Upload your monthly LinkedIn export to merge new posts</div>
+        </div>
+      </div>
+
+      <div class="upload-card" id="drop-zone"
+        onclick="document.getElementById('xls-input').click()"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleDrop(event)">
+        <div class="upload-icon">↑</div>
+        <div class="upload-title">Drop LinkedIn XLS export here</div>
+        <div class="upload-sub">Or click to browse · LinkedIn → Analytics → Content analytics → Export</div>
+      </div>
+      <input type="file" id="xls-input" accept=".xls,.xlsx" style="display:none" onchange="handleFileInput(this)">
+
+      <div class="upload-status" id="upload-status"></div>
+
+      <div class="top-posts-title">Data loaded</div>
+      <div class="table-wrap" style="padding:1rem 1.25rem">
+        <table class="data-table" id="data-summary-table">
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="panel-settings" class="panel">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Settings</div>
+          <div class="page-sub">GitHub Gist connection for persistent storage</div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-title">GitHub Gist storage</div>
+        <div class="settings-row">
+          <label class="settings-label">Gist ID</label>
+          <input class="settings-input" id="cfg-gist" type="text" placeholder="e.g. c59c1f773869fc194cc2ebb0d6c2f6ba">
+          <div class="settings-note">The ID from your Gist URL: gist.github.com/username/[THIS PART]</div>
+        </div>
+        <div class="settings-row">
+          <label class="settings-label">GitHub Personal Access Token</label>
+          <input class="settings-input" id="cfg-token" type="password" placeholder="ghp_...">
+          <div class="settings-note">Stored only in this browser (localStorage). Needs gist scope only. Regenerate at github.com/settings/tokens after first setup.</div>
+        </div>
+        <button class="save-btn" onclick="saveSettings()">Save and reconnect</button>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-title">Data management</div>
+        <button class="save-btn" onclick="if(confirm('This will clear all locally cached data and reload from Gist. Continue?')) { localStorage.removeItem(\'bwb_cache\'); loadData(); }">Reload from Gist</button>
+        &nbsp;
+        <button class="save-btn" style="border-color:var(--coral);color:var(--coral);background:rgba(232,107,91,.08)" onclick="if(confirm('Reset ALL data? This cannot be undone.')) resetData()">Reset all data</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ─── Config ───────────────────────────────────────────────────────────────────
+const DEFAULT_GIST = 'c59c1f773869fc194cc2ebb0d6c2f6ba';
+const DEFAULT_TOKEN = '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';
+
+// ─── Seed data (March + April 2026) ──────────────────────────────────────────
+const SEED_POSTS = [
+  {title:'What does it actually take to bring institutional discipline to digital assets?',cat:'Speaker announcement',month:'2026-04',imp:89,clicks:6,likes:11,comments:1,reposts:2,er:22.47,link:'https://www.linkedin.com/feed/update/urn:li:activity:7455211258749853696'},
+  {title:'BWB Weekly #5 is live! This week: the UK draws a line around stablecoins',cat:'BWB Weekly',month:'2026-04',imp:112,clicks:12,likes:7,comments:0,reposts:0,er:16.96,link:'https://www.linkedin.com/feed/update/urn:li:activity:7453714435153616896'},
+  {title:'Every partner that showed up at ETHSofia over the past two years asked the same question afterwards',cat:'Sponsor / partner',month:'2026-04',imp:245,clicks:76,likes:12,comments:1,reposts:4,er:37.96,link:''},
+  {title:'The ETHSofia and F3 speaker lineups are still forming, and we are looking for people who are in the middle of it',cat:'Speaker announcement',month:'2026-04',imp:140,clicks:3,likes:7,comments:1,reposts:0,er:7.86,link:''},
+  {title:'In February 2026, stablecoin monthly volume exceeded ACH for the first time',cat:'Regular post',month:'2026-04',imp:99,clicks:2,likes:4,comments:1,reposts:1,er:8.08,link:''},
+  {title:'Today in BWB Weekly: Paris Blockchain Week wrapped with an unprecedented show of political engagement',cat:'BWB Weekly',month:'2026-04',imp:219,clicks:5,likes:12,comments:0,reposts:2,er:8.68,link:''},
+  {title:'Diana Ilieva is joining F3: Future Finance Forum as a speaker',cat:'Speaker announcement',month:'2026-04',imp:272,clicks:15,likes:19,comments:1,reposts:2,er:13.60,link:''},
+  {title:'ECONOMY.bg returns as a media partner for Blockchain Week Bulgaria 2026',cat:'Sponsor / partner',month:'2026-04',imp:123,clicks:2,likes:8,comments:0,reposts:0,er:8.13,link:''},
+  {title:'The companies choosing to partner with F3: Future Finance Forum are doing it because the space we create matters',cat:'Speaker announcement',month:'2026-04',imp:122,clicks:2,likes:4,comments:1,reposts:1,er:6.56,link:''},
+  {title:'BWB Weekly #3: Amundi just launched the fastest-growing tokenised fund ever',cat:'BWB Weekly',month:'2026-04',imp:373,clicks:15,likes:16,comments:0,reposts:2,er:8.85,link:''},
+  {title:'Compliance teams, treasury desks, research firms, and protocol teams are all navigating the same shift',cat:'Regular post',month:'2026-04',imp:140,clicks:5,likes:11,comments:1,reposts:1,er:12.86,link:''},
+  {title:'Pashov Audit Group is joining Blockchain Week Bulgaria 2026 as a Silver Sponsor',cat:'Sponsor / partner',month:'2026-04',imp:333,clicks:15,likes:17,comments:4,reposts:2,er:11.41,link:''},
+  {title:'BWB Weekly #2: Bulgaria is becoming one of the more interesting crypto jurisdictions in Europe',cat:'BWB Weekly',month:'2026-04',imp:379,clicks:25,likes:15,comments:0,reposts:3,er:11.35,link:''},
+  {title:'Great energy from UEB3 Ventures at EthCC. Side events like this are where the real conversations happen',cat:'Speaker announcement',month:'2026-04',imp:57,clicks:5,likes:5,comments:0,reposts:0,er:17.54,link:''},
+  {title:'March 31. That is today. Last day to grab a Super Early Bird combo ticket',cat:'Regular post',month:'2026-03',imp:101,clicks:4,likes:5,comments:1,reposts:3,er:12.87,link:''},
+  {title:'Web3Voyager is joining Blockchain Week Bulgaria as an official media partner',cat:'Sponsor / partner',month:'2026-03',imp:370,clicks:6,likes:12,comments:2,reposts:3,er:6.22,link:''},
+  {title:'BWB Weekly #1: Stay in the loop! Our Saturday briefing on ecosystem news',cat:'BWB Weekly',month:'2026-03',imp:611,clicks:12,likes:23,comments:0,reposts:4,er:6.38,link:''},
+  {title:'Who is F3 for? The allocator asking whether tokenized private credit belongs in an institutional portfolio',cat:'Regular post',month:'2026-03',imp:170,clicks:4,likes:7,comments:1,reposts:1,er:7.65,link:''},
+  {title:'Super Early Bird combo tickets for Blockchain Week Bulgaria close in five days',cat:'Regular post',month:'2026-03',imp:176,clicks:7,likes:11,comments:2,reposts:6,er:14.77,link:''},
+  {title:'We are glad to welcome Unramp as a Bronze Sponsor of Blockchain Week Bulgaria',cat:'Sponsor / partner',month:'2026-03',imp:262,clicks:10,likes:13,comments:0,reposts:3,er:9.92,link:''},
+  {title:'$11 billion. The size of the tokenized U.S. Treasuries market as of March 2026',cat:'Regular post',month:'2026-03',imp:94,clicks:0,likes:5,comments:1,reposts:0,er:6.38,link:''},
+  {title:'Bulgarian roots. Global reach. Viktor Uzunov is coming back to Sofia this September',cat:'Speaker announcement',month:'2026-03',imp:329,clicks:27,likes:17,comments:0,reposts:2,er:13.98,link:''},
+  {title:'Blockchain Week Bulgaria brings together the people building, adopting, and connecting across the blockchain ecosystem',cat:'Regular post',month:'2026-03',imp:161,clicks:5,likes:7,comments:1,reposts:3,er:9.94,link:''},
+  {title:'Blockchain Week Bulgaria is proud to welcome back Bitomat as a Bronze Sponsor for 2026',cat:'Sponsor / partner',month:'2026-03',imp:226,clicks:3,likes:9,comments:1,reposts:2,er:6.64,link:''},
+  {title:'The financial infrastructure we have relied on for decades is being structurally restructured',cat:'Regular post',month:'2026-03',imp:72,clicks:6,likes:2,comments:0,reposts:0,er:11.11,link:''},
+  {title:'We are partnering with Paris Blockchain Week, one of Europe leading conferences',cat:'Sponsor / partner',month:'2026-03',imp:845,clicks:27,likes:30,comments:2,reposts:1,er:7.10,link:''},
+  {title:'Our Diamond Headliner for Blockchain Week Bulgaria 2026 is official! Welcoming UEB3 Ventures',cat:'Sponsor / partner',month:'2026-03',imp:453,clicks:16,likes:26,comments:4,reposts:7,er:11.70,link:''},
+  {title:'The institutional phase of crypto is already underway. Dollar-denominated stablecoins now exceed $300B',cat:'Regular post',month:'2026-03',imp:369,clicks:13,likes:11,comments:0,reposts:4,er:7.59,link:''},
+  {title:'Introducing Blockchain Week Bulgaria! We are gathering at Sofia Tech Park this September',cat:'Speaker announcement',month:'2026-03',imp:306,clicks:21,likes:17,comments:0,reposts:9,er:15.36,link:''}
+];
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let posts = [];
+let charts = {};
+
+function cfg(key, fallback) {
+  return localStorage.getItem('bwb_'+key) || fallback;
+}
+
+function gistId()  { return cfg('gist', DEFAULT_GIST); }
+function token()   { return cfg('token', DEFAULT_TOKEN); }
+
+// ─── Gist IO ──────────────────────────────────────────────────────────────────
+async function loadFromGist() {
+  setStatus('loading', 'Loading from Gist...');
+  try {
+    const r = await fetch(`https://api.github.com/gists/${gistId()}`, {
+      headers: { Authorization: `token ${token()}`, Accept: 'application/vnd.github.v3+json' }
+    });
+    if (!r.ok) throw new Error('Gist fetch failed: ' + r.status);
+    const data = await r.json();
+    const content = data.files['bwb_data.json']?.content;
+    if (!content) throw new Error('bwb_data.json not found in Gist');
+    const parsed = JSON.parse(content);
+    return parsed.posts || [];
+  } catch(e) {
+    console.warn('Gist load failed:', e.message);
+    return null;
+  }
+}
+
+async function saveToGist(postsArr) {
+  setStatus('loading', 'Saving...');
+  try {
+    const r = await fetch(`https://api.github.com/gists/${gistId()}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `token ${token()}`,
+        Accept: 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ files: { 'bwb_data.json': { content: JSON.stringify({ posts: postsArr }, null, 2) } } })
+    });
+    if (!r.ok) throw new Error('Save failed: ' + r.status);
+    setStatus('ok', `${postsArr.length} posts · synced`);
+    return true;
+  } catch(e) {
+    setStatus('error', 'Save failed — check token');
+    return false;
+  }
+}
+
+async function loadData() {
+  const remote = await loadFromGist();
+  if (remote && remote.length > 0) {
+    posts = remote;
+    setStatus('ok', `${posts.length} posts · synced`);
+  } else {
+    // First run or Gist empty — seed with existing data and save
+    posts = JSON.parse(JSON.stringify(SEED_POSTS));
+    setStatus('loading', 'First run — saving seed data...');
+    await saveToGist(posts);
+  }
+  populateMonthSelectors();
+  renderOverview();
+  renderPosts();
+  renderInsights();
+  renderDataSummary();
+}
+
+// ─── Utils ────────────────────────────────────────────────────────────────────
+function setStatus(state, msg) {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  dot.className = 'status-dot' + (state === 'loading' ? ' loading' : state === 'error' ? ' error' : '');
+  txt.textContent = msg;
+}
+
+function monthLabel(m) {
+  const map = { '01':'Jan','02':'Feb','03':'Mar','04':'Apr','05':'May','06':'Jun','07':'Jul','08':'Aug','09':'Sep','10':'Oct','11':'Nov','12':'Dec' };
+  const [y,mo] = m.split('-');
+  return (map[mo]||mo) + ' ' + y;
+}
+
+function badgeHtml(cat) {
+  const cls = cat==='BWB Weekly'?'b-weekly':cat==='Speaker announcement'?'b-speaker':cat==='Sponsor / partner'?'b-sponsor':'b-regular';
+  const short = {'BWB Weekly':'Weekly','Speaker announcement':'Speaker','Sponsor / partner':'Sponsor','Regular post':'Regular'}[cat]||cat;
+  return `<span class="badge ${cls}">${short}</span>`;
+}
+
+function getMonths() {
+  return [...new Set(posts.map(p=>p.month))].sort();
+}
+
+function getFiltered(mf) {
+  return mf === 'all' ? posts : posts.filter(p => p.month === mf);
+}
+
+function computeMonthly() {
+  const months = getMonths();
+  return months.map(m => {
+    const ps = posts.filter(p => p.month === m);
+    return {
+      month: m,
+      count: ps.length,
+      impressions: ps.reduce((a,p)=>a+p.imp,0),
+      clicks: ps.reduce((a,p)=>a+p.clicks,0),
+      likes: ps.reduce((a,p)=>a+p.likes,0),
+      comments: ps.reduce((a,p)=>a+p.comments,0),
+      reposts: ps.reduce((a,p)=>a+p.reposts,0),
+      avg_er: ps.length ? ps.reduce((a,p)=>a+p.er,0)/ps.length : 0
+    };
+  });
+}
+
+function computeCats(subset) {
+  const cats = ['BWB Weekly','Speaker announcement','Sponsor / partner','Regular post'];
+  return cats.map(cat => {
+    const ps = subset.filter(p=>p.cat===cat);
+    return {
+      cat,
+      count: ps.length,
+      avg_imp: ps.length ? ps.reduce((a,p)=>a+p.imp,0)/ps.length : 0,
+      avg_er: ps.length ? ps.reduce((a,p)=>a+p.er,0)/ps.length : 0,
+      avg_clicks: ps.length ? ps.reduce((a,p)=>a+p.clicks,0)/ps.length : 0
+    };
+  }).filter(c=>c.count>0);
+}
+
+function populateMonthSelectors() {
+  const months = getMonths();
+  ['ov-month','posts-month'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const existing = [...sel.options].map(o=>o.value);
+    months.forEach(m => {
+      if (!existing.includes(m)) {
+        const o = document.createElement('option');
+        o.value = m; o.textContent = monthLabel(m);
+        sel.appendChild(o);
+      }
+    });
+  });
+  // Populate strategy target months (next months)
+  const stratSel = document.getElementById('strategy-month-target');
+  const lastMonth = months[months.length-1];
+  const [y,mo] = lastMonth.split('-').map(Number);
+  const nextMonths = [];
+  for (let i=1;i<=3;i++) {
+    let nm = mo+i, ny = y;
+    if(nm>12){nm-=12;ny++;}
+    const ms = String(nm).padStart(2,'0');
+    nextMonths.push(`${ny}-${ms}`);
+  }
+  stratSel.innerHTML = nextMonths.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join('');
+}
+
+// ─── Destroy & build charts ────────────────────────────────────────────────────
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function buildBar(id, labels, datasets) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  charts[id] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: datasets.map(d=>({...d, borderRadius:4, borderSkipped:false})) },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid:{display:false}, ticks:{color:'#55556a',font:{size:11,family:'DM Mono'}} },
+        y: { grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#55556a',font:{size:11,family:'DM Mono'}} }
+      }
+    }
+  });
+}
+
+// ─── Overview ─────────────────────────────────────────────────────────────────
+function renderOverview() {
+  if (!posts.length) return;
+  const mf = document.getElementById('ov-month').value;
+  const subset = getFiltered(mf);
+  const monthly = computeMonthly();
+
+  const totalImp = subset.reduce((a,p)=>a+p.imp,0);
+  const totalClicks = subset.reduce((a,p)=>a+p.clicks,0);
+  const totalPosts = subset.length;
+  const avgER = subset.length ? (subset.reduce((a,p)=>a+p.er,0)/subset.length).toFixed(1) : 0;
+
+  // Delta vs previous period
+  const months = getMonths();
+  let delta = '';
+  if (mf !== 'all' && months.length >= 2) {
+    const idx = months.indexOf(mf);
+    if (idx > 0) {
+      const prev = posts.filter(p=>p.month===months[idx-1]);
+      const prevImp = prev.reduce((a,p)=>a+p.imp,0);
+      const pct = prevImp ? Math.round((totalImp-prevImp)/prevImp*100) : 0;
+      delta = pct >= 0 ? `<span class="delta-up">+${pct}% vs prev month</span>` : `<span class="delta-down">${pct}% vs prev month</span>`;
+    }
+  }
+
+  const cards = [
+    {label:'Total impressions',val:totalImp.toLocaleString(),sub:delta||'all posts combined',color:'var(--accent)'},
+    {label:'Avg engagement rate',val:avgER+'%',sub:'per post',color:'var(--accent2)'},
+    {label:'Total clicks',val:totalClicks.toLocaleString(),sub:'link clicks',color:'var(--amber)'},
+    {label:'Posts published',val:totalPosts,sub:'organic',color:'var(--coral)'}
+  ];
+
+  document.getElementById('metric-cards').innerHTML = cards.map(c=>`
+    <div class="metric-card" style="--accent-line:${c.color}">
+      <div class="metric-label">${c.label}</div>
+      <div class="metric-val">${c.val}</div>
+      <div class="metric-delta">${c.sub}</div>
+    </div>`).join('');
+
+  const chartMonthly = mf==='all' ? monthly : monthly.filter(d=>d.month===mf);
+  const mlabels = chartMonthly.map(d=>monthLabel(d.month));
+
+  buildBar('ch-impressions', mlabels, [{label:'Impressions',data:chartMonthly.map(d=>d.impressions),backgroundColor:'#7c6fef'}]);
+  buildBar('ch-er', mlabels, [{label:'Avg ER %',data:chartMonthly.map(d=>+d.avg_er.toFixed(2)),backgroundColor:'#5bc8a0'}]);
+
+  const cats = computeCats(subset);
+  buildBar('ch-cat-imp', cats.map(c=>c.cat.replace(' announcement','').replace(' / partner','')),
+    [{label:'Avg impressions',data:cats.map(c=>Math.round(c.avg_imp)),backgroundColor:'#e8b84b'}]);
+  buildBar('ch-cat-er', cats.map(c=>c.cat.replace(' announcement','').replace(' / partner','')),
+    [{label:'Avg ER %',data:cats.map(c=>+c.avg_er.toFixed(2)),backgroundColor:'#9d93f5'}]);
+
+  const top5 = [...subset].sort((a,b)=>b.imp-a.imp).slice(0,5);
+  const maxER = Math.max(...top5.map(p=>p.er));
+  document.getElementById('top-table').innerHTML = `<table>
+    <thead><tr><th>Post</th><th>Category</th><th>Month</th><th>Impr.</th><th>Clicks</th><th>ER %</th></tr></thead>
+    <tbody>${top5.map(p=>`<tr>
+      <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.title}">${p.title}</td>
+      <td>${badgeHtml(p.cat)}</td>
+      <td style="color:var(--muted);font-family:var(--mono);font-size:12px">${monthLabel(p.month)}</td>
+      <td style="font-weight:500">${p.imp.toLocaleString()}</td>
+      <td style="color:var(--muted)">${p.clicks}</td>
+      <td><div class="er-bar-wrap"><div class="er-bar-bg"><div class="er-bar-fill" style="width:${Math.round(p.er/maxER*100)}%"></div></div><span style="font-size:12px;font-family:var(--mono);color:var(--muted)">${p.er.toFixed(1)}%</span></div></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+// ─── All posts ────────────────────────────────────────────────────────────────
+function renderPosts() {
+  if (!posts.length) return;
+  const mf = document.getElementById('posts-month').value;
+  const cf = document.getElementById('posts-cat').value;
+  let filtered = posts;
+  if (mf !== 'all') filtered = filtered.filter(p=>p.month===mf);
+  if (cf !== 'all') filtered = filtered.filter(p=>p.cat===cf);
+  filtered = [...filtered].sort((a,b)=>b.imp-a.imp);
+  document.getElementById('posts-count').textContent = filtered.length+' posts';
+  document.getElementById('posts-table').innerHTML = `<table>
+    <thead><tr><th>Post</th><th>Category</th><th>Month</th><th>Impr.</th><th>Clicks</th><th>Likes</th><th>Comm.</th><th>Rep.</th><th>ER %</th></tr></thead>
+    <tbody>${filtered.map(p=>`<tr>
+      <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.title}">${p.link?`<a href="${p.link}" target="_blank" style="color:var(--text);text-decoration:none;hover:underline">${p.title}</a>`:p.title}</td>
+      <td>${badgeHtml(p.cat)}</td>
+      <td style="color:var(--muted);font-family:var(--mono);font-size:12px">${monthLabel(p.month)}</td>
+      <td style="font-weight:500">${p.imp.toLocaleString()}</td>
+      <td>${p.clicks}</td>
+      <td>${p.likes}</td>
+      <td>${p.comments}</td>
+      <td>${p.reposts}</td>
+      <td style="font-family:var(--mono);font-size:12px">${p.er.toFixed(1)}%</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+// ─── Insights ─────────────────────────────────────────────────────────────────
+function renderInsights() {
+  if (!posts.length) return;
+  const cats = computeCats(posts);
+  const topCat = [...cats].sort((a,b)=>b.avg_er-a.avg_er)[0];
+  const topPost = [...posts].sort((a,b)=>b.er-a.er)[0];
+  const avgER = (posts.reduce((a,p)=>a+p.er,0)/posts.length).toFixed(1);
+
+  document.getElementById('insight-cards').innerHTML = `
+    <div class="insight-card">
+      <div class="insight-title">Best category by ER</div>
+      <div class="insight-val">${topCat.cat.replace(' announcement','')}</div>
+      <div class="insight-sub">${topCat.avg_er.toFixed(1)}% avg engagement rate</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-title">Highest ER post</div>
+      <div class="insight-val">${topPost.er.toFixed(1)}%</div>
+      <div class="insight-sub" title="${topPost.title}">${topPost.title.slice(0,42)}...</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-title">Overall avg ER</div>
+      <div class="insight-val">${avgER}%</div>
+      <div class="insight-sub">${posts.length} posts · all time</div>
+    </div>`;
+}
+
+// ─── Strategy ─────────────────────────────────────────────────────────────────
+async function generateStrategy() {
+  const btn = document.getElementById('gen-btn');
+  const out = document.getElementById('strategy-output');
+  const targetMonth = document.getElementById('strategy-month-target').value;
+  btn.disabled = true;
+  out.innerHTML = '<span class="strategy-placeholder">Analysing data and generating strategy...</span>';
+
+  const monthly = computeMonthly();
+  const cats = computeCats(posts);
+  const topPosts = [...posts].sort((a,b)=>b.er-a.er).slice(0,3);
+  const topCatByER = [...cats].sort((a,b)=>b.avg_er-a.avg_er);
+
+  const monthlyStr = monthly.map(m=>`- ${monthLabel(m.month)}: ${m.count} posts, ${m.impressions} impressions, ${m.clicks} clicks, avg ER ${m.avg_er.toFixed(1)}%`).join('\n');
+  const catStr = topCatByER.map(c=>`- ${c.cat}: avg ${Math.round(c.avg_imp)} impressions, ${c.avg_er.toFixed(1)}% ER, ${c.avg_clicks.toFixed(1)} clicks (${c.count} posts)`).join('\n');
+  const topStr = topPosts.map((p,i)=>`${i+1}. "${p.title.slice(0,70)}" — ${p.er.toFixed(1)}% ER, ${p.imp} impressions [${p.cat}]`).join('\n');
+
+  const prompt = `You are a strategic LinkedIn content advisor for Blockchain Week Bulgaria (BWB), a blockchain events company based in Sofia, Bulgaria. The events run 23–25 September 2026 at Sofia Tech Park. Sub-events: ETHSofia (builder/Ethereum focus, Sep 24) and F3 Future Finance Forum (institutional track covering tokenisation, stablecoins, MiCA regulation, Sep 25).
+
+LINKEDIN PERFORMANCE DATA (BWB company page, organic posts only):
+
+Monthly performance:
+${monthlyStr}
+
+Category performance (avg per post, all time):
+${catStr}
+
+Top 3 posts by engagement rate:
+${topStr}
+
+Generate a strategic content plan for ${monthLabel(targetMonth)} for the BWB LinkedIn company page.
+
+Structure your response exactly as follows:
+
+**Data interpretation**
+2–3 sentences on what the trends across these months reveal about audience behaviour and content resonance.
+
+**Strategic priorities for ${monthLabel(targetMonth)}**
+Three focused priorities, each 1–2 sentences. Number them.
+
+**Recommended content mix**
+Specific post count by category with rationale. Format as: Category (X posts) — reason.
+
+**Content angles to prioritise**
+3–4 specific topic angles tied to the September event timeline and what the data shows works. Be concrete.
+
+**One risk to avoid**
+One specific pattern or behaviour the data suggests should be avoided.
+
+Rules: No em dashes. Do not use "innovative", "groundbreaking", "remarkable", "mind-blowing". No "from X to Y" constructions. Be direct and specific. No filler. British English.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    const text = data.content?.filter(b=>b.type==='text').map(b=>b.text).join('') || 'No response.';
+    out.innerHTML = `<div style="white-space:pre-wrap">${text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div>`;
+  } catch(e) {
+    out.innerHTML = '<span style="color:var(--coral)">Could not generate strategy. Check your connection.</span>';
+  }
+  btn.disabled = false;
+}
+
+// ─── Update data ──────────────────────────────────────────────────────────────
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processXLS(file);
+}
+
+function handleFileInput(input) {
+  const file = input.files[0];
+  if (file) processXLS(file);
+  input.value = '';
+}
+
+function categorise(title) {
+  const t = String(title).toLowerCase();
+  if (t.includes('bwb weekly') || (t.includes('weekly') && (t.includes('bwb') || t.includes('issue')))) return 'BWB Weekly';
+  if (/\bis joining\b|\bjoining us\b|\bcatch him\b|\bintroducing\b|\bspeaker\b|\bjoins f3\b|\bjoins ethsofia\b/.test(t)) return 'Speaker announcement';
+  if (/sponsor|partner|bronze|silver|gold|diamond|media partner|welcom/.test(t)) return 'Sponsor / partner';
+  return 'Regular post';
+}
+
+function processXLS(file) {
+  const status = document.getElementById('upload-status');
+  status.className = 'upload-status visible';
+  status.textContent = 'Reading file...';
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'binary' });
+      const ws = wb.Sheets['All posts'];
+      if (!ws) { showStatus('error', 'Could not find "All posts" sheet. Use a LinkedIn Content Analytics export.'); return; }
+
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      const headerIdx = rows.findIndex(r => r.some(c=>String(c).includes('Post title')));
+      if (headerIdx === -1) { showStatus('error', 'Could not find post data headers.'); return; }
+
+      const headers = rows[headerIdx];
+      const get = (row, col) => { const i = headers.findIndex(h=>String(h).includes(col)); return i>=0?row[i]:null; };
+
+      const newPosts = [];
+      let dupes = 0;
+
+      for (let i = headerIdx+1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r[0]) continue;
+        const rawDate = get(r, 'Created date');
+        if (!rawDate) continue;
+        const parts = String(rawDate).split('/');
+        if (parts.length !== 3) continue;
+        const month = `${parts[2]}-${parts[0].padStart(2,'0')}`;
+        const title = String(get(r,'Post title')||'').replace(/\n/g,' ').trim().slice(0,100);
+        const link = String(get(r,'Post link')||'');
+        const er = parseFloat(get(r,'Engagement rate')||0)*100;
+
+        const isDupe = posts.some(p => p.title.slice(0,50) === title.slice(0,50) && p.month === month);
+        if (isDupe) { dupes++; continue; }
+
+        newPosts.push({
+          title, cat: categorise(title), month, link,
+          imp: parseInt(get(r,'Impressions')||0),
+          clicks: parseInt(get(r,'Clicks')||0),
+          likes: parseInt(get(r,'Likes')||0),
+          comments: parseInt(get(r,'Comments')||0),
+          reposts: parseInt(get(r,'Reposts')||0),
+          er: parseFloat(er.toFixed(2))
+        });
+      }
+
+      if (newPosts.length === 0) {
+        showStatus('error', `No new posts found. ${dupes} duplicate(s) skipped.`);
+        return;
+      }
+
+      posts = [...posts, ...newPosts];
+      const saved = await saveToGist(posts);
+      if (saved) {
+        showStatus('success', `Added ${newPosts.length} new post(s). ${dupes} duplicate(s) skipped. Saved to Gist.`);
+        populateMonthSelectors();
+        renderOverview();
+        renderPosts();
+        renderInsights();
+        renderDataSummary();
+      }
+    } catch(err) {
+      showStatus('error', 'Error: ' + err.message);
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function showStatus(type, msg) {
+  const el = document.getElementById('upload-status');
+  el.className = 'upload-status visible ' + type;
+  el.textContent = msg;
+}
+
+function renderDataSummary() {
+  const months = getMonths();
+  const tbody = document.querySelector('#data-summary-table tbody');
+  if (!tbody) return;
+  tbody.innerHTML = months.map(m => {
+    const ps = posts.filter(p=>p.month===m);
+    const imp = ps.reduce((a,p)=>a+p.imp,0);
+    return `<tr><td>${monthLabel(m)}</td><td>${ps.length} posts · ${imp.toLocaleString()} impressions</td></tr>`;
+  }).join('') + `<tr><td style="color:var(--muted);padding-top:.75rem">Total</td><td style="padding-top:.75rem">${posts.length} posts · ${posts.reduce((a,p)=>a+p.imp,0).toLocaleString()} impressions</td></tr>`;
+}
+
+// ─── Settings ─────────────────────────────────────────────────────────────────
+function saveSettings() {
+  const gist = document.getElementById('cfg-gist').value.trim();
+  const tok = document.getElementById('cfg-token').value.trim();
+  if (gist) localStorage.setItem('bwb_gist', gist);
+  if (tok) localStorage.setItem('bwb_token', tok);
+  loadData();
+}
+
+function resetData() {
+  posts = [];
+  localStorage.removeItem('bwb_cache');
+  loadData();
+}
+
+// ─── Tab navigation ───────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+  if (name === 'settings') {
+    document.getElementById('cfg-gist').value = gistId();
+    document.getElementById('cfg-token').value = token();
+  }
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
