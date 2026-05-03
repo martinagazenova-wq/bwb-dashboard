@@ -7,23 +7,23 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@300;400;500;600;700&display=swap');
 
   :root {
-    --bg: #0a0a0f;
-    --surface: #13131a;
-    --surface2: #1a1a24;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.12);
-    --text: #f0f0f5;
-    --muted: #8888a0;
-    --dim: #55556a;
-    --accent: #7c6fef;
-    --accent2: #5bc8a0;
+    --bg: #292528;
+    --surface: #322e31;
+    --surface2: #3a3538;
+    --border: rgba(224,222,226,0.08);
+    --border2: rgba(224,222,226,0.15);
+    --text: #E0DEE2;
+    --muted: #9e9aa2;
+    --dim: #6e6a72;
+    --accent: #0360BD;
+    --accent2: #F668A2;
     --amber: #e8b84b;
-    --coral: #e86b5b;
-    --font: 'DM Sans', sans-serif;
-    --mono: 'DM Mono', monospace;
+    --coral: #f07060;
+    --font: 'Overpass Mono', monospace;
+    --mono: 'Overpass Mono', monospace;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -64,7 +64,7 @@
     font-weight: 600;
     letter-spacing: .15em;
     text-transform: uppercase;
-    color: var(--accent);
+    color: #5da8f5;
     font-family: var(--mono);
   }
   .logo-name {
@@ -94,7 +94,7 @@
     transition: all .15s;
   }
   .nav-item:hover { background: rgba(255,255,255,.04); color: var(--text); }
-  .nav-item.active { background: rgba(124,111,239,.12); color: var(--accent); }
+  .nav-item.active { background: rgba(3,96,189,.15); color: #5da8f5; }
   .nav-icon { width: 16px; height: 16px; opacity: .7; flex-shrink: 0; }
 
   .nav-section {
@@ -112,7 +112,7 @@
     margin-left: 220px;
     flex: 1;
     padding: 2rem 2.5rem;
-    max-width: 1100px;
+    width: calc(100% - 220px);
   }
 
   .page-header {
@@ -141,7 +141,7 @@
   .status-dot {
     width: 6px; height: 6px;
     border-radius: 50%;
-    background: var(--accent2);
+    background: #F668A2;
     flex-shrink: 0;
   }
   .status-dot.loading { background: var(--amber); animation: pulse 1s infinite; }
@@ -272,9 +272,9 @@
     letter-spacing: .04em;
     white-space: nowrap;
   }
-  .b-weekly    { background: rgba(124,111,239,.15); color: #9d93f5; }
-  .b-speaker   { background: rgba(91,200,160,.12); color: #6dd9b2; }
-  .b-sponsor   { background: rgba(232,184,75,.12); color: #e8b84b; }
+  .b-weekly    { background: rgba(3,96,189,.18); color: #5da8f5; }
+  .b-speaker   { background: rgba(246,104,162,.15); color: #f89cc4; }
+  .b-sponsor   { background: rgba(74,158,221,.15); color: #7ec4f0; }
   .b-regular   { background: rgba(255,255,255,.06); color: var(--muted); }
 
   /* Strategy */
@@ -304,13 +304,13 @@
     padding: .625rem 1.25rem;
     border-radius: 8px;
     border: 1px solid var(--accent);
-    background: rgba(124,111,239,.1);
-    color: var(--accent);
+    background: rgba(3,96,189,.12);
+    color: #5da8f5;
     cursor: pointer;
     transition: all .15s;
     align-self: flex-start;
   }
-  .gen-btn:hover { background: rgba(124,111,239,.2); }
+  .gen-btn:hover { background: rgba(3,96,189,.22); }
   .gen-btn:disabled { opacity: .4; cursor: not-allowed; }
 
   .strategy-box {
@@ -326,7 +326,7 @@
     color: var(--text);
     white-space: pre-wrap;
   }
-  .strategy-output strong { color: var(--accent); font-weight: 600; }
+  .strategy-output strong { color: #5da8f5; font-weight: 600; }
   .strategy-placeholder { color: var(--dim); font-size: 13px; }
 
   /* Month selector for strategy */
@@ -349,12 +349,12 @@
     margin-bottom: 1rem;
   }
   .upload-card:hover {
-    border-color: var(--accent);
-    background: rgba(124,111,239,.04);
+    border-color: #0360BD;
+    background: rgba(3,96,189,.04);
   }
   .upload-card.drag-over {
-    border-color: var(--accent);
-    background: rgba(124,111,239,.08);
+    border-color: #0360BD;
+    background: rgba(3,96,189,.08);
   }
   .upload-icon { font-size: 2rem; margin-bottom: .75rem; opacity: .5; }
   .upload-title { font-size: 15px; font-weight: 500; margin-bottom: .375rem; }
@@ -402,7 +402,7 @@
     width: 100%;
     transition: border-color .15s;
   }
-  .settings-input:focus { border-color: var(--accent); }
+  .settings-input:focus { border-color: #0360BD; }
   .settings-note { font-size: 11px; color: var(--dim); margin-top: 4px; }
   .save-btn {
     font-family: var(--font);
@@ -411,8 +411,8 @@
     padding: .5rem 1.25rem;
     border-radius: 8px;
     border: 1px solid var(--accent);
-    background: rgba(124,111,239,.1);
-    color: var(--accent);
+    background: rgba(3,96,189,.12);
+    color: #5da8f5;
     cursor: pointer;
     transition: all .15s;
   }
@@ -436,7 +436,12 @@
 
   .er-bar-wrap { display: flex; align-items: center; gap: 8px; }
   .er-bar-bg { flex: 1; height: 4px; background: rgba(255,255,255,.07); border-radius: 2px; overflow: hidden; }
-  .er-bar-fill { height: 100%; border-radius: 2px; background: var(--accent); }
+  .er-bar-fill { height: 100%; border-radius: 2px; background: #0360BD; }
+
+  .top-sort-tabs { display: flex; gap: 2px; background: var(--surface2); border-radius: 8px; padding: 3px; }
+  .top-tab { font-family: var(--font); font-size: 12px; padding: .3rem .75rem; border: none; border-radius: 6px; background: none; color: var(--muted); cursor: pointer; transition: all .15s; white-space: nowrap; }
+  .top-tab:hover { color: var(--text); }
+  .top-tab.active { background: var(--surface); color: var(--text); font-weight: 500; }
 </style>
 </head>
 <body>
@@ -527,7 +532,15 @@
         </div>
       </div>
 
-      <div class="top-posts-title">Top 5 posts by impressions</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem">
+        <div class="top-posts-title" style="margin-bottom:0">Top 5 posts</div>
+        <div class="top-sort-tabs" id="top-sort-tabs">
+          <button class="top-tab active" onclick="setTopSort('imp',this)">Impressions</button>
+          <button class="top-tab" onclick="setTopSort('er',this)">Eng. rate</button>
+          <button class="top-tab" onclick="setTopSort('clicks',this)">Clicks</button>
+          <button class="top-tab" onclick="setTopSort('likes',this)">Likes</button>
+        </div>
+      </div>
       <div class="table-wrap" id="top-table"></div>
     </div>
 
@@ -907,26 +920,44 @@ function renderOverview() {
   const chartMonthly = mf==='all' ? monthly : monthly.filter(d=>d.month===mf);
   const mlabels = chartMonthly.map(d=>monthLabel(d.month));
 
-  buildBar('ch-impressions', mlabels, [{label:'Impressions',data:chartMonthly.map(d=>d.impressions),backgroundColor:'#7c6fef'}]);
-  buildBar('ch-er', mlabels, [{label:'Avg ER %',data:chartMonthly.map(d=>+d.avg_er.toFixed(2)),backgroundColor:'#5bc8a0'}]);
+  buildBar('ch-impressions', mlabels, [{label:'Impressions',data:chartMonthly.map(d=>d.impressions),backgroundColor:'#0360BD'}]);
+  buildBar('ch-er', mlabels, [{label:'Avg ER %',data:chartMonthly.map(d=>+d.avg_er.toFixed(2)),backgroundColor:'#F668A2'}]);
 
   const cats = computeCats(subset);
   buildBar('ch-cat-imp', cats.map(c=>c.cat.replace(' announcement','').replace(' / partner','')),
-    [{label:'Avg impressions',data:cats.map(c=>Math.round(c.avg_imp)),backgroundColor:'#e8b84b'}]);
+    [{label:'Avg impressions',data:cats.map(c=>Math.round(c.avg_imp)),backgroundColor:'#4a9edd'}]);
   buildBar('ch-cat-er', cats.map(c=>c.cat.replace(' announcement','').replace(' / partner','')),
-    [{label:'Avg ER %',data:cats.map(c=>+c.avg_er.toFixed(2)),backgroundColor:'#9d93f5'}]);
+    [{label:'Avg ER %',data:cats.map(c=>+c.avg_er.toFixed(2)),backgroundColor:'#c94d8c'}]);
 
-  const top5 = [...subset].sort((a,b)=>b.imp-a.imp).slice(0,5);
-  const maxER = Math.max(...top5.map(p=>p.er));
+  renderTopTable(subset);
+}
+
+let topSort = 'imp';
+
+function setTopSort(key, btn) {
+  topSort = key;
+  document.querySelectorAll('.top-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const mf = document.getElementById('ov-month').value;
+  renderTopTable(getFiltered(mf));
+}
+
+function renderTopTable(subset) {
+  const top5 = [...subset].sort((a,b) => b[topSort] - a[topSort]).slice(0,5);
+  const maxVal = Math.max(...top5.map(p => p[topSort])) || 1;
+  const barColor = {imp:'#0360BD',er:'#F668A2',clicks:'#4a9edd',likes:'#c94d8c'}[topSort];
+  const fmtVal = (p) => topSort==='er' ? p.er.toFixed(1)+'%' : topSort==='imp' ? p.imp.toLocaleString() : topSort==='clicks' ? p.clicks : p.likes;
+
   document.getElementById('top-table').innerHTML = `<table>
-    <thead><tr><th>Post</th><th>Category</th><th>Month</th><th>Impr.</th><th>Clicks</th><th>ER %</th></tr></thead>
-    <tbody>${top5.map(p=>`<tr>
-      <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.title}">${p.title}</td>
+    <thead><tr><th>Post</th><th>Category</th><th>Month</th><th>Impr.</th><th>Clicks</th><th>Likes</th><th>ER %</th></tr></thead>
+    <tbody>${top5.map(p => `<tr>
+      <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.title}">${p.title}</td>
       <td>${badgeHtml(p.cat)}</td>
       <td style="color:var(--muted);font-family:var(--mono);font-size:12px">${monthLabel(p.month)}</td>
-      <td style="font-weight:500">${p.imp.toLocaleString()}</td>
-      <td style="color:var(--muted)">${p.clicks}</td>
-      <td><div class="er-bar-wrap"><div class="er-bar-bg"><div class="er-bar-fill" style="width:${Math.round(p.er/maxER*100)}%"></div></div><span style="font-size:12px;font-family:var(--mono);color:var(--muted)">${p.er.toFixed(1)}%</span></div></td>
+      <td style="${topSort==='imp'?'font-weight:500':'color:var(--muted)'}">${p.imp.toLocaleString()}</td>
+      <td style="${topSort==='clicks'?'font-weight:500':'color:var(--muted)'}">${p.clicks}</td>
+      <td style="${topSort==='likes'?'font-weight:500':'color:var(--muted)'}">${p.likes}</td>
+      <td><div class="er-bar-wrap"><div class="er-bar-bg"><div class="er-bar-fill" style="width:${Math.round(p[topSort]/maxVal*100)}%;background:${barColor}"></div></div><span style="font-size:12px;font-family:var(--mono);color:var(--muted)">${fmtVal(p)}</span></div></td>
     </tr>`).join('')}</tbody></table>`;
 }
 
